@@ -15,12 +15,16 @@ set -exv
 
 CLI_VERSION=`cat src/azure-cli/azure/cli/__main__.py | grep __version__ | sed s/' '//g | sed s/'__version__='// |  sed s/\"//g`
 
+# PIP_INDEX_URL env must exist in `docker build --secret`, use an empty string if it doesn't exist.
+export PIP_INDEX_URL=${PIP_INDEX_URL}
+
 # Create a container image that includes the source code and a built RPM using this file.
 docker build \
     --target build-env \
     --build-arg cli_version=${CLI_VERSION} \
     --build-arg image=${IMAGE} \
     --build-arg python_package=${PYTHON_PACKAGE} \
+    --secret id=PIP_INDEX_URL \
     -f ./scripts/release/rpm/${DOCKERFILE}.dockerfile \
     -t azure/azure-cli:${DOCKERFILE}-builder \
     .
@@ -39,7 +43,7 @@ docker build \
 id=$(docker create azure/azure-cli:${DOCKERFILE}-builder)
 # https://docs.docker.com/engine/reference/commandline/cp/
 # Append /. so that the x86_64 folder's content is copied, instead of x86_64 folder itself.
-docker cp $id:/root/rpmbuild/RPMS/x86_64/. ${BUILD_STAGINGDIRECTORY}
+docker cp $id:/out/. ${BUILD_STAGINGDIRECTORY}
 
 # Save these too a staging directory so that later build phases can choose to save them as Artifacts or publish them to
 # a registry.

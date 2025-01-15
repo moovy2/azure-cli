@@ -7,7 +7,7 @@ from knack.util import CLIError
 from azure.cli.testsdk.scenario_tests.recording_processors import RecordingProcessor
 
 ROLE_COMMAND_MAX_RETRY = 20
-ROLE_COMMAND_SLEEP_DURATION = 10
+ROLE_COMMAND_SLEEP_DURATION = 20
 
 
 def retry(func, sleep_duration=ROLE_COMMAND_SLEEP_DURATION, max_retry=ROLE_COMMAND_MAX_RETRY):
@@ -33,7 +33,9 @@ def escape_apply_kwargs(val):
 
 
 class MSGraphUpnReplacer(RecordingProcessor):
-    """Replace UPN with encoded #
+    """Replace UPN with encoded #.
+    azure.cli.testsdk.scenario_tests.recording_processors.GeneralNameReplacer can't replace encoded UPN in URL, that's
+    why this replacer is needed.
     """
     def __init__(self, test_name, mock_name):
         self.test_name = test_name

@@ -12,12 +12,12 @@ from azure.cli.core.aaz import *
 
 
 @register_command(
-    "network local-gateway delete"
+    "network local-gateway delete",
 )
 class Delete(AAZCommand):
     """Delete a local VPN gateway.
 
-    In order to delete a Local Network Gateway, you must first delete ALL Connection objects in Azure that are connected to the Gateway. After deleting the Gateway, proceed to delete other resources now not in use. For more information, follow the order of instructions on this page: https://docs.microsoft.com/azure/vpn-gateway/vpn-gateway-delete-vnet-gateway-portal
+    In order to delete a Local Network Gateway, you must first delete ALL Connection objects in Azure that are connected to the Gateway. After deleting the Gateway, proceed to delete other resources now not in use. For more information, follow the order of instructions on this page: https://learn.microsoft.com/azure/vpn-gateway/vpn-gateway-delete-vnet-gateway-portal
 
     :example: Delete a Local Network Gateway.
         az network local-gateway delete -g MyResourceGroup -n MyLocalGateway
@@ -65,7 +65,17 @@ class Delete(AAZCommand):
         return cls._args_schema
 
     def _execute_operations(self):
+        self.pre_operations()
         yield self.LocalNetworkGatewaysDelete(ctx=self.ctx)()
+        self.post_operations()
+
+    @register_callback
+    def pre_operations(self):
+        pass
+
+    @register_callback
+    def post_operations(self):
+        pass
 
     class LocalNetworkGatewaysDelete(AAZHttpOperation):
         CLIENT_TYPE = "MgmtClient"
@@ -151,6 +161,10 @@ class Delete(AAZCommand):
 
         def on_204(self, session):
             pass
+
+
+class _DeleteHelper:
+    """Helper class for Delete"""
 
 
 __all__ = ["Delete"]
