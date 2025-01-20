@@ -30,6 +30,7 @@ def load_arguments(self, _):
                    help='list all entities, expect long delay if under a big organization')
 
     with self.argument_context('ad app') as c:
+        # https://learn.microsoft.com/en-us/graph/api/resources/application?view=graph-rest-1.0
         c.argument('app_id', help='application id')
         c.argument('application_object_id', options_list=('--object-id',))
         c.argument('display_name', help='the display name of the application')
@@ -40,19 +41,30 @@ def load_arguments(self, _):
                         'Also known as App ID URI, this value is set when an application is used as a resource app. '
                         'The identifierUris acts as the prefix for the scopes you\'ll reference in your API\'s code, '
                         'and it must be globally unique. You can use the default value provided, which is in the '
-                        'form api://<application-client-id>, or specify a more readable URI like '
+                        'form `api://<application-client-id>`, or specify a more readable URI like '
                         'https://contoso.com/api.')
 
         c.argument('is_fallback_public_client', arg_type=get_three_state_flag(),
                    help="Specifies the fallback application type as public client, such as an installed application "
                         "running on a mobile device. The default value is false which means the fallback application "
                         "type is confidential client such as a web app.")
+        c.argument('service_management_reference',
+                   help='References application or service contact information from a Service or Asset Management '
+                        'database.')
         c.argument('sign_in_audience',
                    arg_type=get_enum_type(['AzureADMyOrg', 'AzureADMultipleOrgs', 'AzureADandPersonalMicrosoftAccount',
                                            'PersonalMicrosoftAccount']),
                    help='Specifies the Microsoft accounts that are supported for the current application.')
 
+        # api
+        # https://learn.microsoft.com/en-us/graph/api/resources/apiapplication?view=graph-rest-1.0
+        c.argument('requested_access_token_version', arg_group='api', type=int,
+                   help='Specifies the access token version expected by this resource. This changes the version and '
+                        'format of the JWT produced independent of the endpoint or client used to request the access '
+                        'token.')
+
         # web
+        # https://learn.microsoft.com/en-us/graph/api/resources/webapplication?view=graph-rest-1.0
         c.argument('web_home_page_url', arg_group='web', help='Home page or landing page of the application.')
         c.argument('web_redirect_uris', arg_group='web', nargs='+',
                    help='Space-separated values. '
@@ -68,12 +80,14 @@ def load_arguments(self, _):
                         'implicit flow.')
 
         # publicClient
+        # https://learn.microsoft.com/en-us/graph/api/resources/publicclientapplication?view=graph-rest-1.0
         c.argument('public_client_redirect_uris', arg_group='publicClient', nargs='+',
                    help='Space-separated values. '
                         'Specifies the URLs where user tokens are sent for sign-in, or the redirect URIs '
                         'where OAuth 2.0 authorization codes and access tokens are sent.')
 
         # keyCredential
+        # https://learn.microsoft.com/en-us/graph/api/resources/keycredential?view=graph-rest-1.0
         c.argument('start_date', arg_group='keyCredential',
                    help="Date or datetime at which credentials become valid (e.g. '2017-01-01T01:00:00+00:00' or "
                         "'2017-01-01'). Default value is current time")
@@ -103,21 +117,21 @@ def load_arguments(self, _):
                         "can be assigned to users, groups, or service principals associated with other applications. " +
                         JSON_PROPERTY_HELP)
         c.argument('optional_claims', arg_group='JSON property', type=validate_file_or_dict,
-                   help="Application developers can configure optional claims in their Azure AD applications to "
+                   help="Application developers can configure optional claims in their Microsoft Entra applications to "
                         "specify the claims that are sent to their application by the Microsoft security token "
-                        "service. For more information, see https://docs.microsoft.com/azure/active-directory/develop"
+                        "service. For more information, see https://learn.microsoft.com/azure/active-directory/develop"
                         "/active-directory-optional-claims. " + JSON_PROPERTY_HELP)
 
     with self.argument_context('ad app owner list') as c:
         c.argument('identifier', options_list=['--id'], help='identifier uri, application id, or object id of the application')
 
     with self.argument_context('ad app permission') as c:
-        # https://docs.microsoft.com/en-us/graph/api/resources/requiredresourceaccess
+        # https://learn.microsoft.com/en-us/graph/api/resources/requiredresourceaccess
         c.argument('api',
                    help='requiredResourceAccess.resourceAppId - '
                         'The unique identifier for the resource that the application requires access to. '
                         'This should be equal to the appId declared on the target resource application.')
-        # https://docs.microsoft.com/en-us/graph/api/resources/resourceaccess
+        # https://learn.microsoft.com/en-us/graph/api/resources/resourceaccess
         c.argument('api_permissions', nargs='+',
                    help='Space-separated list of {id}={type}. '
                         "{id} is resourceAccess.id - The unique identifier for one of the oauth2PermissionScopes or "
@@ -179,8 +193,10 @@ def load_arguments(self, _):
                    help='Role of the service principal.')
         c.argument('skip_assignment', arg_type=get_three_state_flag(),
                    deprecate_info=c.deprecate(target='--skip-assignment', hide=True), help='No-op.')
-        c.argument('show_auth_for_sdk', options_list='--sdk-auth', deprecate_info=c.deprecate(target='--sdk-auth'),
-                   help='output result in compatible with Azure SDK auth file', arg_type=get_three_state_flag())
+        c.argument('show_auth_in_json', options_list=['--sdk-auth', '--json-auth'],
+                   deprecate_info=c.deprecate(target='--sdk-auth'),
+                   help='Output service principal credential along with cloud endpoints in JSON format. ',
+                   arg_type=get_three_state_flag())
 
     with self.argument_context('ad sp owner list') as c:
         c.argument('identifier', options_list=['--id'], help='service principal name, or object id or the service principal')
@@ -200,7 +216,7 @@ def load_arguments(self, _):
             c.argument('cert', arg_group='keyCredential', validator=validate_cert,
                        help='Certificate to use for credentials. When used with `--keyvault,`, indicates the name of the '
                             'cert to use or create. Otherwise, supply a PEM or DER formatted public certificate string. '
-                            'Use `@{path}` to load from a file. Do not include private key info.')
+                            'Use `@{path}` to load from a file. Do not include the private key.')
             c.argument('create_cert', arg_group='keyCredential', action='store_true',
                        help='Create a self-signed certificate to use for the credential. Only the current OS user has '
                             'read/write permission to this certificate. Use with `--keyvault` to create the certificate in '
@@ -247,10 +263,11 @@ def load_arguments(self, _):
                    help='If the user must change her password on the next login.')
 
     with self.argument_context('ad user create') as c:
-        c.argument('immutable_id', help="This must be specified if you are using a federated domain for "
-                                        "the user's userPrincipalName (UPN) property when creating a new user account."
-                                        " It is used to associate an on-premises Active Directory user account with "
-                                        "their Azure AD user object.")
+        c.argument('immutable_id',
+                   help="This property is used to associate an on-premises Active Directory user account to their "
+                        "Microsoft Entra user object. This property must be specified when creating a new user account "
+                        "in the Graph if you're using a federated domain for the user's userPrincipalName (UPN) "
+                        "property. NOTE: The $ and _ characters can't be used when specifying this property.")
         c.argument('user_principal_name',
                    help="The user principal name (someuser@contoso.com). It must contain one of the verified domains "
                         "for the tenant.")
@@ -301,7 +318,6 @@ def load_arguments(self, _):
         c.argument('resource_group_name', options_list=['--resource-group', '-g'], help='use it only if the role or assignment was added at the level of a resource group')
 
     with self.argument_context('role assignment') as c:
-        c.argument('role_assignment_name', options_list=['--name', '-n'])
         c.argument('role', help='role name or id', completer=get_role_definition_name_completion_list)
         c.argument('show_all', options_list=['--all'], action='store_true', help='show all assignments under the current subscription')
         c.argument('include_inherited', action='store_true', help='include assignments applied on parent scopes')
@@ -312,12 +328,16 @@ def load_arguments(self, _):
                    "managed identities. For managed identities use the principal id. For service principals, "
                    "use the object id and not the app id.")
         c.argument('ids', nargs='+', help='space-separated role assignment ids')
-        c.argument('include_classic_administrators', arg_type=get_three_state_flag(), help='list default role assignments for subscription classic administrators, aka co-admins')
+        c.argument('include_classic_administrators', arg_type=get_three_state_flag(),
+                   help='list default role assignments for subscription classic administrators, aka co-admins',
+                   deprecate_info=c.deprecate(target='--include-classic-administrators'))
         c.argument('description', is_preview=True, min_api='2020-04-01-preview', help='Description of role assignment.')
         c.argument('condition', is_preview=True, min_api='2020-04-01-preview', help='Condition under which the user can be granted permission.')
         c.argument('condition_version', is_preview=True, min_api='2020-04-01-preview', help='Version of the condition syntax. If --condition is specified without --condition-version, default to 2.0.')
+        c.argument('assignment_name', name_arg_type,
+                   help='A GUID for the role assignment. It must be unique and different for each role assignment. If omitted, a new GUID is generated.')
 
-    time_help = ('The {} of the query in the format of %Y-%m-%dT%H:%M:%SZ, e.g. 2000-12-31T12:59:59Z. Defaults to {}')
+    time_help = 'The {} of the query in the format of %Y-%m-%dT%H:%M:%SZ, e.g. 2000-12-31T12:59:59Z. Defaults to {}'
     with self.argument_context('role assignment list-changelogs') as c:
         c.argument('start_time', help=time_help.format('start time', '1 Hour prior to the current time'))
         c.argument('end_time', help=time_help.format('end time', 'the current time'))
@@ -338,7 +358,7 @@ def load_arguments(self, _):
             foreign_group = "ForeignGroup"
 
         c.argument('assignee_principal_type', min_api='2018-09-01-preview', arg_type=get_enum_type(PrincipalType),
-                   help='use with --assignee-object-id to avoid errors caused by propagation latency in AAD Graph')
+                   help='use with --assignee-object-id to avoid errors caused by propagation latency in Microsoft Graph')
 
     with self.argument_context('role assignment update') as c:
         c.argument('role_assignment',
@@ -346,10 +366,26 @@ def load_arguments(self, _):
                         'JSON description.')
 
     with self.argument_context('role assignment delete') as c:
-        c.argument('yes', options_list=['--yes', '-y'], action='store_true', help='Continue to delete all assignments under the subscription')
+        c.argument('yes', options_list=['--yes', '-y'], action='store_true', help='Currently no-op.')
 
     with self.argument_context('role definition') as c:
-        c.argument('role_definition_id', options_list=['--name', '-n'], help='the role definition name')
         c.argument('custom_role_only', arg_type=get_three_state_flag(), help='custom roles only(vs. build-in ones)')
         c.argument('role_definition', help="json formatted content which defines the new role.")
-        c.argument('name', arg_type=name_arg_type, completer=get_role_definition_name_completion_list, help="the role's name")
+
+    with self.argument_context('role definition list') as c:
+        c.argument('name', arg_type=name_arg_type, completer=get_role_definition_name_completion_list,
+                   help="Matches the role definition's name (GUID) or roleName (e.g. 'Reader') property. "
+                        "If a GUID is provided, for better performance, use `az role definition show` command.")
+
+    with self.argument_context('role definition show') as c:
+        c.argument('name', arg_type=name_arg_type, help="The role definition's name (GUID)")
+        c.argument('role_id', options_list=['--id'],
+                   help='The fully qualified role definition ID. Use the format, '
+                        '/subscriptions/{guid}/providers/Microsoft.Authorization/roleDefinitions/{roleDefinitionId} '
+                        'for subscription level role definitions, or '
+                        '/providers/Microsoft.Authorization/roleDefinitions/{roleDefinitionId} '
+                        'for tenant level role definitions.')
+
+    with self.argument_context('role definition delete') as c:
+        c.argument('name', arg_type=name_arg_type, completer=get_role_definition_name_completion_list,
+                   help="Matches the role definition's name (GUID) or roleName (e.g. 'Reader') property.")

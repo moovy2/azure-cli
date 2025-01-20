@@ -28,12 +28,12 @@ from knack import CLI
 
 class MockCLI(CLI):
     def __init__(self):
-        super(MockCLI, self).__init__(cli_name='mock_cli', config_dir=GLOBAL_CONFIG_DIR,
-                                      config_env_var_prefix=ENV_VAR_PREFIX, commands_loader_cls=MockLoader)
+        super().__init__(cli_name='mock_cli', config_dir=GLOBAL_CONFIG_DIR,
+                         config_env_var_prefix=ENV_VAR_PREFIX, commands_loader_cls=MockLoader)
         self.cloud = get_active_cloud(self)
 
 
-class MockLoader(object):
+class MockLoader:
     def __init__(self, ctx):
         self.ctx = ctx
 
@@ -43,7 +43,7 @@ class MockLoader(object):
                        mod='models', operation_group='managed_clusters')
 
 
-class MockCmd(object):
+class MockCmd:
     def __init__(self, ctx, arguments={}):
         self.cli_ctx = ctx
         self.loader = MockLoader(self.cli_ctx)
@@ -645,9 +645,9 @@ class AcsCustomCommandTest(unittest.TestCase):
         try:
             temp_dir = os.path.realpath(tempfile.mkdtemp())  # tempfile.TemporaryDirectory() is no available on 2.7
             test_location = os.path.join(temp_dir, 'kubelogin')
-            k8s_install_kubelogin(mock.MagicMock(), client_version='0.0.4', install_location=test_location)
+            k8s_install_kubelogin(mock.MagicMock(), client_version='0.0.4', install_location=test_location, arch="amd64")
             self.assertEqual(mock_url_retrieve.call_count, 1)
-            # 3 warnings, 1st for arch, 2nd for download result, 3rd for updating PATH
+            # 3 warnings, 1st for download result, 2nd for moving file, 3rd for updating PATH
             self.assertEqual(logger_mock.warning.call_count, 3)  # 3 warnings, one for download result
         finally:
             shutil.rmtree(temp_dir)
@@ -659,7 +659,7 @@ class AcsCustomCommandTest(unittest.TestCase):
         try:
             temp_dir = tempfile.mkdtemp()  # tempfile.TemporaryDirectory() is no available on 2.7
             test_location = os.path.join(temp_dir, 'foo', 'kubelogin')
-            k8s_install_kubelogin(mock.MagicMock(), client_version='0.0.4', install_location=test_location)
+            k8s_install_kubelogin(mock.MagicMock(), client_version='0.0.4', install_location=test_location, arch="amd64")
             self.assertTrue(os.path.exists(test_location))
         finally:
             shutil.rmtree(temp_dir)
@@ -688,13 +688,13 @@ class AcsCustomCommandTest(unittest.TestCase):
             test_location = os.path.join(temp_dir, 'foo', 'kubelogin')
             test_ver = '1.2.6'
             test_source_url = 'http://url2'
-            k8s_install_kubelogin(mock.MagicMock(), client_version=test_ver, install_location=test_location, source_url=test_source_url)
+            k8s_install_kubelogin(mock.MagicMock(), client_version=test_ver, install_location=test_location, source_url=test_source_url, arch="amd64")
             mock_url_retrieve.assert_called_with(mockUrlretrieveUrlValidator(test_source_url, test_ver), mock.ANY)
         finally:
             shutil.rmtree(temp_dir)
 
 
-class mockUrlretrieveUrlValidator(object):
+class mockUrlretrieveUrlValidator:
     def __init__(self, url, version):
         self.url = url
         self.version = version

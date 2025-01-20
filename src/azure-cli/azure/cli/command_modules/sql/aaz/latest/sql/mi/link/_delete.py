@@ -16,13 +16,16 @@ from azure.cli.core.aaz import *
     confirmation="Are you sure you want to perform this operation?",
 )
 class Delete(AAZCommand):
-    """Drop a distributed availability group between Sql On-Prem and Sql Managed Instance.
+    """Drop a Managed Instance link between Sql On-Prem and Sql Managed Instance.
+
+    :example: Initiate a Managed Instance link drop.
+        az sql mi link delete -g testrg --mi testcl --name link1
     """
 
     _aaz_info = {
-        "version": "2022-02-01-preview",
+        "version": "2023-08-01-preview",
         "resources": [
-            ["mgmt-plane", "/subscriptions/{}/resourcegroups/{}/providers/microsoft.sql/managedinstances/{}/distributedavailabilitygroups/{}", "2022-02-01-preview"],
+            ["mgmt-plane", "/subscriptions/{}/resourcegroups/{}/providers/microsoft.sql/managedinstances/{}/distributedavailabilitygroups/{}", "2023-08-01-preview"],
         ]
     }
 
@@ -43,9 +46,9 @@ class Delete(AAZCommand):
         # define Arg Group ""
 
         _args_schema = cls._args_schema
-        _args_schema.distributed_availability_group_name = AAZStrArg(
-            options=["-n", "--name", "--distributed-availability-group-name"],
-            help="Distributed availability group name.",
+        _args_schema.link_name = AAZStrArg(
+            options=["-n", "--name", "--link-name"],
+            help="Managed Instance link name.",
             required=True,
             id_part="child_name_1",
         )
@@ -61,7 +64,17 @@ class Delete(AAZCommand):
         return cls._args_schema
 
     def _execute_operations(self):
+        self.pre_operations()
         yield self.DistributedAvailabilityGroupsDelete(ctx=self.ctx)()
+        self.post_operations()
+
+    @register_callback
+    def pre_operations(self):
+        pass
+
+    @register_callback
+    def post_operations(self):
+        pass
 
     class DistributedAvailabilityGroupsDelete(AAZHttpOperation):
         CLIENT_TYPE = "MgmtClient"
@@ -112,13 +125,13 @@ class Delete(AAZCommand):
 
         @property
         def error_format(self):
-            return "ODataV4Format"
+            return "MgmtErrorFormat"
 
         @property
         def url_parameters(self):
             parameters = {
                 **self.serialize_url_param(
-                    "distributedAvailabilityGroupName", self.ctx.args.distributed_availability_group_name,
+                    "distributedAvailabilityGroupName", self.ctx.args.link_name,
                     required=True,
                 ),
                 **self.serialize_url_param(
@@ -140,7 +153,7 @@ class Delete(AAZCommand):
         def query_parameters(self):
             parameters = {
                 **self.serialize_query_param(
-                    "api-version", "2022-02-01-preview",
+                    "api-version", "2023-08-01-preview",
                     required=True,
                 ),
             }
@@ -151,6 +164,10 @@ class Delete(AAZCommand):
 
         def on_204(self, session):
             pass
+
+
+class _DeleteHelper:
+    """Helper class for Delete"""
 
 
 __all__ = ["Delete"]

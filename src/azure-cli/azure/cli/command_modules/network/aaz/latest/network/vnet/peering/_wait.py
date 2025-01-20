@@ -20,7 +20,7 @@ class Wait(AAZWaitCommand):
 
     _aaz_info = {
         "resources": [
-            ["mgmt-plane", "/subscriptions/{}/resourcegroups/{}/providers/microsoft.network/virtualnetworks/{}/virtualnetworkpeerings/{}", "2022-01-01"],
+            ["mgmt-plane", "/subscriptions/{}/resourcegroups/{}/providers/microsoft.network/virtualnetworks/{}/virtualnetworkpeerings/{}", "2023-11-01"],
         ]
     }
 
@@ -62,11 +62,11 @@ class Wait(AAZWaitCommand):
         self.VirtualNetworkPeeringsGet(ctx=self.ctx)()
         self.post_operations()
 
-    # @register_callback
+    @register_callback
     def pre_operations(self):
         pass
 
-    # @register_callback
+    @register_callback
     def post_operations(self):
         pass
 
@@ -126,7 +126,7 @@ class Wait(AAZWaitCommand):
         def query_parameters(self):
             parameters = {
                 **self.serialize_query_param(
-                    "api-version", "2022-01-01",
+                    "api-version", "2023-11-01",
                     required=True,
                 ),
             }
@@ -182,6 +182,23 @@ class Wait(AAZWaitCommand):
             properties.do_not_verify_remote_gateways = AAZBoolType(
                 serialized_name="doNotVerifyRemoteGateways",
             )
+            properties.enable_only_i_pv6_peering = AAZBoolType(
+                serialized_name="enableOnlyIPv6Peering",
+            )
+            properties.local_address_space = AAZObjectType(
+                serialized_name="localAddressSpace",
+            )
+            _WaitHelper._build_schema_address_space_read(properties.local_address_space)
+            properties.local_subnet_names = AAZListType(
+                serialized_name="localSubnetNames",
+            )
+            properties.local_virtual_network_address_space = AAZObjectType(
+                serialized_name="localVirtualNetworkAddressSpace",
+            )
+            _WaitHelper._build_schema_address_space_read(properties.local_virtual_network_address_space)
+            properties.peer_complete_vnets = AAZBoolType(
+                serialized_name="peerCompleteVnets",
+            )
             properties.peering_state = AAZStrType(
                 serialized_name="peeringState",
             )
@@ -195,9 +212,12 @@ class Wait(AAZWaitCommand):
             properties.remote_address_space = AAZObjectType(
                 serialized_name="remoteAddressSpace",
             )
-            _build_schema_address_space_read(properties.remote_address_space)
+            _WaitHelper._build_schema_address_space_read(properties.remote_address_space)
             properties.remote_bgp_communities = AAZObjectType(
                 serialized_name="remoteBgpCommunities",
+            )
+            properties.remote_subnet_names = AAZListType(
+                serialized_name="remoteSubnetNames",
             )
             properties.remote_virtual_network = AAZObjectType(
                 serialized_name="remoteVirtualNetwork",
@@ -205,10 +225,9 @@ class Wait(AAZWaitCommand):
             properties.remote_virtual_network_address_space = AAZObjectType(
                 serialized_name="remoteVirtualNetworkAddressSpace",
             )
-            _build_schema_address_space_read(properties.remote_virtual_network_address_space)
+            _WaitHelper._build_schema_address_space_read(properties.remote_virtual_network_address_space)
             properties.remote_virtual_network_encryption = AAZObjectType(
                 serialized_name="remoteVirtualNetworkEncryption",
-                flags={"read_only": True},
             )
             properties.resource_guid = AAZStrType(
                 serialized_name="resourceGuid",
@@ -217,6 +236,9 @@ class Wait(AAZWaitCommand):
             properties.use_remote_gateways = AAZBoolType(
                 serialized_name="useRemoteGateways",
             )
+
+            local_subnet_names = cls._schema_on_200.properties.local_subnet_names
+            local_subnet_names.Element = AAZStrType()
 
             remote_bgp_communities = cls._schema_on_200.properties.remote_bgp_communities
             remote_bgp_communities.regional_community = AAZStrType(
@@ -228,40 +250,43 @@ class Wait(AAZWaitCommand):
                 flags={"required": True},
             )
 
+            remote_subnet_names = cls._schema_on_200.properties.remote_subnet_names
+            remote_subnet_names.Element = AAZStrType()
+
             remote_virtual_network = cls._schema_on_200.properties.remote_virtual_network
             remote_virtual_network.id = AAZStrType()
 
             remote_virtual_network_encryption = cls._schema_on_200.properties.remote_virtual_network_encryption
             remote_virtual_network_encryption.enabled = AAZBoolType(
-                flags={"required": True, "read_only": True},
+                flags={"required": True},
             )
-            remote_virtual_network_encryption.enforcement = AAZStrType(
-                flags={"read_only": True},
-            )
+            remote_virtual_network_encryption.enforcement = AAZStrType()
 
             return cls._schema_on_200
 
 
-_schema_address_space_read = None
+class _WaitHelper:
+    """Helper class for Wait"""
 
+    _schema_address_space_read = None
 
-def _build_schema_address_space_read(_schema):
-    global _schema_address_space_read
-    if _schema_address_space_read is not None:
-        _schema.address_prefixes = _schema_address_space_read.address_prefixes
-        return
+    @classmethod
+    def _build_schema_address_space_read(cls, _schema):
+        if cls._schema_address_space_read is not None:
+            _schema.address_prefixes = cls._schema_address_space_read.address_prefixes
+            return
 
-    _schema_address_space_read = AAZObjectType()
+        cls._schema_address_space_read = _schema_address_space_read = AAZObjectType()
 
-    address_space_read = _schema_address_space_read
-    address_space_read.address_prefixes = AAZListType(
-        serialized_name="addressPrefixes",
-    )
+        address_space_read = _schema_address_space_read
+        address_space_read.address_prefixes = AAZListType(
+            serialized_name="addressPrefixes",
+        )
 
-    address_prefixes = _schema_address_space_read.address_prefixes
-    address_prefixes.Element = AAZStrType()
+        address_prefixes = _schema_address_space_read.address_prefixes
+        address_prefixes.Element = AAZStrType()
 
-    _schema.address_prefixes = _schema_address_space_read.address_prefixes
+        _schema.address_prefixes = cls._schema_address_space_read.address_prefixes
 
 
 __all__ = ["Wait"]
